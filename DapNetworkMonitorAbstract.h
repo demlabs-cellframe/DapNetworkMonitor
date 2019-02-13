@@ -25,8 +25,8 @@ public:
 
     virtual bool isTunDriverInstalled() const = 0;
 
-    bool isTunGatewayDefined() { return  m_isTunGatewayDefined; }
-    bool isOtherGatewayDefined() { return  m_isOtherGatewayDefined; }
+    virtual bool isTunGatewayDefined() final   { return  m_isTunGatewayDefined; }
+    virtual bool isOtherGatewayDefined() final { return  m_isOtherGatewayDefined; }
 
     virtual bool isMonitoringRunning() const final { return m_isMonitoringRunning; }
 
