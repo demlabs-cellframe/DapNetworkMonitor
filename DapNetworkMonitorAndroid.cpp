@@ -12,17 +12,6 @@ bool DapNetworkMonitorAndroid::isTunDriverInstalled() const
     return false;
 }
 
-bool DapNetworkMonitorAndroid::isTunGatewayDefined() const
-{
-    // TODO
-    return false;
-}
-bool DapNetworkMonitorAndroid::isOtherGatewayDefined() const
-{
-    // TODO
-    return false;
-}
-
 bool DapNetworkMonitorAndroid::monitoringStart()
 {
     // TODO
