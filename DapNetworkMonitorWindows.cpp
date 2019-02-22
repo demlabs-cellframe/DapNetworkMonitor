@@ -1,6 +1,7 @@
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include <windows.h>
+#include "registry.h"
 #include <QThread>
 
 #include "DapNetworkMonitorWindows.h"
@@ -15,7 +16,7 @@ DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent):
 
 bool DapNetworkMonitorWindows::isTunDriverInstalled() const
 {
-    return true;
+    return WinRegReader::isTAPInstalled();
 }
 
 bool DapNetworkMonitorWindows::isTunGatewayDefined() const
