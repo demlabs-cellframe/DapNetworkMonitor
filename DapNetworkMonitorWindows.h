@@ -3,6 +3,7 @@
 
 #include "DapNetworkMonitorAbstract.h"
 #include <QtConcurrent/QtConcurrent>
+#include <windows.h>
 
 class DapNetworkMonitorWindows : public DapNetworkMonitorAbstract
 {
@@ -15,6 +16,7 @@ public:
         return &me;
     }
 
+
     bool isTunDriverInstalled() const override;
     bool isTunGatewayDefined() const;
     bool isOtherGatewayDefined() const;
@@ -23,6 +25,7 @@ public:
 
 private:
     void internalWorker();
+    static char *readRegKey(HKEY, LPCSTR, LPCSTR);
     QMutex mutex;
 
 signals:
