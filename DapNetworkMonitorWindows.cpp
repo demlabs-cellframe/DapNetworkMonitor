@@ -1,6 +1,6 @@
 #include <winsock2.h>
 #include <iphlpapi.h>
-#include <windows.h>
+
 #include <QThread>
 
 #include "DapNetworkMonitorWindows.h"
@@ -13,9 +13,46 @@ DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent):
      QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
 }
 
+char *DapNetworkMonitorWindows::readRegKey(HKEY hKey, LPCSTR regSubKey, LPCSTR val) {
+    size_t bufSize = 128;
+    char *ret = (char*)malloc(bufSize);
+    DWORD dwSize = (DWORD)bufSize;
+    LSTATUS err = RegGetValueA(hKey, regSubKey, val, RRF_RT_REG_SZ, NULL, (void*)ret, &dwSize);
+    if (err == ERROR_SUCCESS) {
+        return ret;
+    } else {
+        free(ret);
+        return NULL;
+    }
+}
+
 bool DapNetworkMonitorWindows::isTunDriverInstalled() const
 {
-    return true;
+    const char keyPath[] = "SYSTEM\\CurrentControlSet\\Control\\Class\\{4D36E972-E325-11CE-BFC1-08002BE10318}";
+    HKEY baseKey;
+    LSTATUS err = RegOpenKeyExA(HKEY_LOCAL_MACHINE, keyPath, 0
+                  ,KEY_ENUMERATE_SUB_KEYS | KEY_WOW64_64KEY | KEY_READ
+                  ,&baseKey);
+    if (err != ERROR_SUCCESS) {
+        return NULL;
+    }
+    DWORD index;
+    char tmp[128] = {'\0'};
+    for (index = 0; ; ++index) {
+        char hKey[MAX_PATH];
+        DWORD len = MAX_PATH;
+        if (RegEnumKeyExA(baseKey, index, hKey, &len, NULL, NULL, NULL, NULL) != ERROR_SUCCESS) {
+            break;
+        }
+        char *tmp2 = readRegKey(baseKey, hKey, "ComponentId");
+        if (tmp2) {
+            strcpy(tmp, tmp2);
+            free(tmp2);
+            if (strcmp(tmp, "tap0901") == 0) return true;
+            memset(tmp, '\0', sizeof(tmp));
+        }
+    }
+    return false;
 }
 
 bool DapNetworkMonitorWindows::isTunGatewayDefined() const
