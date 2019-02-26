@@ -22,6 +22,10 @@ HEADERS += $$PWD/DapNetworkMonitorAndroid.h
 }
 
 macos {
+LIBS += -framework Foundation
+LIBS += -framework CoreFoundation
+#LIBS += -framework NetworkExtension
+LIBS += -framework SystemConfiguration
 SOURCES += $$PWD/DapNetworkMonitorDarwin.cpp
 HEADERS += $$PWD/DapNetworkMonitorDarwin.h
 }

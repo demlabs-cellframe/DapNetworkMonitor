@@ -2,7 +2,7 @@
 #define NETWORKMONITORMACOS_H
 
 #include "DapNetworkMonitorAbstract.h"
-#include <QProcess>
+#include "dap_network_monitor.h"
 
 class DapNetworkMonitorDarwin : public DapNetworkMonitorAbstract
 {
@@ -16,20 +16,13 @@ private:
     bool isTunGatewayDefinedInnerCheck() const;
     bool isOtherGatewayDefinedInnerCheck() const;
 
+    static void cbMonitorNotification(SCDynamicStoreRef store, CFArrayRef changedKeys, void *info);
+
 public:
     static DapNetworkMonitorDarwin* instance()
         {static DapNetworkMonitorDarwin client; return &client;}
 
     bool isTunDriverInstalled() const override;
-    void monitorParser(QString monOut);
-
-private:
-    QString m_parsedPath;
-    QProcess *m_monitorProcess;
-
-signals:
-    void sigMonitoringStart();
-    void sigMonitoringFinish();
 
 public slots:
     bool monitoringStart() override;

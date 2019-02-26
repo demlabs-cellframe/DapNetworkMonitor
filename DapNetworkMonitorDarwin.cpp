@@ -1,51 +1,52 @@
 #include "DapNetworkMonitorDarwin.h"
-#include <QProcess>
+
+#include <stdio.h>
+#include <string.h>
+
+
+static void callbackForChangedInterfaces (const void* a_key, const void* a_value, void* a_context) {
+    //qInfo() << "Key - " << a_key << " value - " << a_value; // There is no usefull information from this so far
+}
+
+
+void DapNetworkMonitorDarwin::cbMonitorNotification(SCDynamicStoreRef a_store, CFArrayRef a_changedKeys, void *a_info)
+{
+    // Count of available names in ArrayRef
+    CFIndex nameCount = CFArrayGetCount( a_changedKeys );
+
+    //Iterate through the CFArrayRef and fill the vector
+    for( int i = 0; i < nameCount ; ++i  )
+    {
+        CFStringRef l_sName = (CFStringRef)CFArrayGetValueAtIndex( a_changedKeys, i );
+        const char *l_cstrName = CFStringGetCStringPtr( l_sName , kCFStringEncodingMacRoman );
+        //qInfo() << "Interface " << l_cstrName << " is changed";
+
+        CFDictionaryRef __values = (CFDictionaryRef)SCDynamicStoreCopyValue(a_store, l_sName);
+        if (__values == NULL){
+            qWarning() << "Interface " << l_cstrName << " is undefined";
+            emit instance()->sigInterfaceUndefined();
+            return;
+        }
+        else{
+            qInfo() << "Defined new or changed interface " << l_cstrName;
+        }
+
+        CFDictionaryApplyFunction(__values, callbackForChangedInterfaces, NULL);
+    }
+
+    if (instance()->isTunGatewayDefinedInnerCheck())
+        emit instance()->sigTunGatewayDefined();
+    else if (instance()->isOtherGatewayDefinedInnerCheck())
+        //emit instance()->sigOtherGatewayDefined(); // TODO More deep check, because default gateway may be false route from wifi
+        emit instance()->sigOtherGatewayUndefined();
+    else
+        emit instance()->sigTunGatewayUndefined();
+}
+
 
 DapNetworkMonitorDarwin::DapNetworkMonitorDarwin(QObject *parent):
     DapNetworkMonitorAbstract(parent)
 {
-    QString monitorProgramName = "route";
-    QStringList monitorProgramArgs; monitorProgramArgs << "monitor";
-
-    m_monitorProcess = new QProcess(this);
-    m_monitorProcess->setProcessChannelMode(QProcess::MergedChannels);
-
-    connect(m_monitorProcess,&QProcess::started, [=] {
-        qInfo() << "Started network monitor";
-    });
-    connect(m_monitorProcess,static_cast<void (QProcess::*)(int) >(&QProcess::finished), [=] {
-        qInfo() << "Stopped network monitor";
-    });
-    // No need to define a slot function...
-    connect(m_monitorProcess, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
-        qWarning() << "Network monitor error: " << error << endl;
-    });
-
-    connect(m_monitorProcess, &QProcess::readyReadStandardOutput, this, [=] {
-        QString strRead(m_monitorProcess->readAllStandardOutput());
-
-        if (!isMonitoringRunning())
-            return;
-
-        QStringList cmds = strRead.split("\n");
-        for(int i = 0 ; i < cmds.size() ; i ++) {
-                //qInfo() << "---------------------- " << cmds.at(i);
-                monitorParser(cmds.at(i));
-        }
-    });
-
-    connect(this, &DapNetworkMonitorDarwin::sigMonitoringStart, this, [=]{
-        qInfo() << "Start process itself";
-        m_monitorProcess->start(monitorProgramName, monitorProgramArgs);
-        emit instance()->sigMonitoringStarted();
-    }, Qt::QueuedConnection);
-
-    connect(this, &DapNetworkMonitorDarwin::sigMonitoringFinish, this, [=]{
-        qInfo() << "Stop process itself";
-        m_monitorProcess->close();
-        emit instance()->sigMonitoringFinished();
-    }, Qt::QueuedConnection);
-
 }
 
 bool DapNetworkMonitorDarwin::isTunDriverInstalled() const
@@ -57,140 +58,24 @@ bool DapNetworkMonitorDarwin::isTunDriverInstalled() const
 
 bool DapNetworkMonitorDarwin::monitoringStart()
 {
-    emit sigMonitoringStart();
+    qDebug() << "Start network monitoring";
+    if(m_isMonitoringRunning == true) {
+        qWarning() << "Network monitoring already running";
+    }
+
+    if(dap_network_monitor_init(cbMonitorNotification) == 0) {
+        m_isMonitoringRunning = true;
+    }
+
     return m_isMonitoringRunning;
 }
 bool DapNetworkMonitorDarwin::monitoringStop()
 {
-    emit sigMonitoringFinish();
-    return m_isMonitoringRunning;
-}
+    qDebug() << "Stop network monitoring";
+    dap_network_monitor_deinit();
 
-void DapNetworkMonitorDarwin::monitorParser(QString monOut)
-{
-    QStringList res = monOut.split(" ");
-    //qDebug() << "res " << res ;
-
-    if( monOut == ""){
-        //qDebug() << "Parsed path ends";
-        m_parsedPath = "";
-    }
-
-    if( m_parsedPath == "" ){ /// Parser start
-        if( ( res[0] == "got" ) && ( res[1] == "message" ) ){
-            m_parsedPath = "got_message";
-            //qDebug() << "Parsed path "<< parsedPath;
-        }
-    }else if( m_parsedPath == "got_message" ){ /// got message from route monitor
-    //qDebug() << "monOut = "<<monOut;
-        if( res[0] == "RTM_GET:" ){
-            m_parsedPath = "got_message_rtm_get";
-            //qDebug() << "Parsed path "<< parsedPath;
-        }else if( res[0] == "RTM_DELETE:" ){
-            m_parsedPath = "got_message_rtm_delete";
-            //qDebug() << "Parsed path "<< parsedPath;
-            if( monOut.contains("GATEWAY") ){
-                m_parsedPath = "got_message_rtm_delete_gateway";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }
-        }else if( res[0] == "RTM_ADD:" ){
-            m_parsedPath = "got_message_rtm_add";
-            //qDebug() << "Parsed path "<< parsedPath;
-            if( monOut.contains("GATEWAY") ){
-                m_parsedPath = "got_message_rtm_add_gateway";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }else if (monOut.contains("HOST")){
-                m_parsedPath = "got_message_rtm_add_route";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }
-        }else if( res[0].left(4) == "RTM_"){
-            m_parsedPath = "rtm_smth";
-            //qDebug() << "Parsed path "<< parsedPath;
-        }else
-            qWarning() << "Unknown message ";
-
-    }else if( m_parsedPath == "got_message_rtm_add_gateway") {  /// RTM_ADD_GATEWAY
-        if ( res[0] == "sockaddrs:" ){
-            m_parsedPath = "got_message_rtm_add_gateway_sockaddr";
-            //qDebug() << "Parsed path "<< parsedPath;
-            if( res[1].contains("GATEWAY") ){
-                m_parsedPath = "got_message_rtm_add_gateway_sockaddr_gateway";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }
-        }
-    }else if( m_parsedPath == "got_message_rtm_add_route") {  /// RTM_ADD_GATEWAY
-        if ( res[0] == "sockaddrs:" ){
-            m_parsedPath = "got_message_rtm_add_route_sockaddr";
-            //qDebug() << "Parsed path "<< parsedPath;
-            if( res[1].contains("GATEWAY") ){
-                m_parsedPath = "got_message_rtm_add_route_sockaddr_gateway";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }
-        }
-    }else if( m_parsedPath == "got_message_rtm_add_gateway_sockaddr_gateway"){ /// RTM_ADD_GATEWAY  sockaddr
-        if( res[0] == ""){
-            if( res[1] == "default" ){
-                qInfo()<< "add default gateway "<<res[2];
-                if ( res[2] == m_tunnelGateway )
-                    emit sigTunGatewayDefined();
-                else
-                    emit sigOtherGatewayDefined(res[2]);
-                emit instance()->sigInterfaceDefined();
-            }else if (res[1] == m_serverAddress ){
-                qDebug() << "add upstream gateway, res = "<< res;
-            }
-        }
-    }else if( m_parsedPath == "got_message_rtm_add_route_sockaddr_gateway"){ /// RTM_ADD_GATEWAY  sockaddr
-        if( res[0] == ""){
-            if( res[1] == m_tunnelGateway)
-                if ( res[2] == m_tunnelDestination ){
-                    qInfo() << "Upstream route is defined";
-                    emit sigUpstreamRouteDefined();
-                }
-        }
-    }else if ( m_parsedPath == "got_message_rtm_delete" ) { /// RTM_DELETE  for single route records
-        if ( res[0] == "sockaddrs:" ){
-            m_parsedPath = "got_message_rtm_delete_sockaddr";
-            //qDebug() << "Parsed path "<< parsedPath;
-            if( res[1].contains("GATEWAY") && res[1].contains("DST") ){
-                m_parsedPath = "got_message_rtm_delete_sockaddr_gateway";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }
-        }
-
-    } else if( m_parsedPath == "got_message_rtm_delete_gateway") {  /// RTM_DEL_GATEWAY
-        if ( res[0] == "sockaddrs:" ){
-            m_parsedPath = "got_message_rtm_delete_gateway_sockaddr";
-            //qDebug() << "Parsed path "<< parsedPath;
-            if( res[1].contains("GATEWAY") && res[1].contains("DST")  ){
-                m_parsedPath = "got_message_rtm_delete_gateway_sockaddr_gateway";
-                //qDebug() << "Parsed path "<< parsedPath;
-            }
-        }
-    }else if( m_parsedPath == "got_message_rtm_delete_sockaddr_gateway"){ /// RTM_DEL sockaddr gateway
-        if( res[0] == ""){
-            if( res[1] == m_tunnelGateway && res[2] == m_tunnelDestination ){
-                qInfo() << "delete route  " << res[1] << " to " << res[2];
-                emit sigUpstreamRouteUndefined();
-            }
-        }
-    }else if( m_parsedPath == "got_message_rtm_delete_gateway_sockaddr_gateway"){ /// RTM_DEL_GATEWAY  sockaddr gateway
-        if( res[0] == ""){
-            //qInfo()<< "delete gateway "<<res[2];
-            if( res[1] == "default" ){
-                qInfo()<< "delete default gateway "<<res[2];
-                if ( res[2] == m_tunnelGateway ){
-                    emit sigTunGatewayUndefined();
-                    emit instance()->sigInterfaceUndefined();
-                }
-                else if(isOtherGatewayDefined() && !isOtherGatewayDefinedInnerCheck()){
-                    emit sigOtherGatewayUndefined();
-                    emit instance()->sigInterfaceUndefined();
-                }
-            }
-        }
-    }
-
+    m_isMonitoringRunning = false;
+    return true;
 }
 
 /**
@@ -255,4 +140,3 @@ bool DapNetworkMonitorDarwin::isTunGatewayDefinedInnerCheck() const
     }
 
 }
-
