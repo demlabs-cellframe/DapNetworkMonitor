@@ -1,5 +1,5 @@
 #include "DapNetworkMonitorDarwin.h"
-
+#include <QFileInfo>
 #include <stdio.h>
 #include <string.h>
 
@@ -51,7 +51,9 @@ DapNetworkMonitorDarwin::DapNetworkMonitorDarwin(QObject *parent):
 
 bool DapNetworkMonitorDarwin::isTunDriverInstalled() const
 {
-    // TODO
+    QFileInfo fi(QString("/dev/tun5"));
+    if(fi.exists())
+        return true;
     return false;
 }
 
