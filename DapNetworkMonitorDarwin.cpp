@@ -51,8 +51,7 @@ DapNetworkMonitorDarwin::DapNetworkMonitorDarwin(QObject *parent):
 
 bool DapNetworkMonitorDarwin::isTunDriverInstalled() const
 {
-    // TODO
-    return false;
+    return true;
 }
 
 
