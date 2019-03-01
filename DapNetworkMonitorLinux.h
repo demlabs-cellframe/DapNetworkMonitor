@@ -12,10 +12,13 @@ class DapNetworkMonitorLinux : public DapNetworkMonitorAbstract
 private:
 
     static void cbMonitorNotification(const dap_network_notification_t notification);
+    static bool checkTunnelGw();
 
     DapNetworkMonitorLinux(QObject *parent = Q_NULLPTR);
     DapNetworkMonitorLinux(const DapNetworkMonitorLinux&) = delete;
     DapNetworkMonitorLinux& operator=(const DapNetworkMonitorLinux&) = delete;
+
+
 public:
     static DapNetworkMonitorLinux* instance()
         {static DapNetworkMonitorLinux client; return &client;}
