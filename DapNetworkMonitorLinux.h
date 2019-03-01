@@ -18,7 +18,6 @@ private:
     DapNetworkMonitorLinux(const DapNetworkMonitorLinux&) = delete;
     DapNetworkMonitorLinux& operator=(const DapNetworkMonitorLinux&) = delete;
 
-
 public:
     static DapNetworkMonitorLinux* instance()
         {static DapNetworkMonitorLinux client; return &client;}
