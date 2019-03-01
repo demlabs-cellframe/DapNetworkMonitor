@@ -29,8 +29,13 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                     notification.route.gateway_address != DAP_ADRESS_UNDEFINED) {
                 QString gatewayAddr(notification.route.s_gateway_address);
                 if(gatewayAddr == instance()->m_tunnelGateway) {
-                    qInfo() << "Tunnel gateway is undefined";
-                    emit instance()->sigTunGatewayUndefined();
+                    if (checkTunnelGw()){
+                        qInfo() << "Tunnel gateway is still defined";
+                        emit instance()->sigTunGatewayDefined();
+                    } else {
+                        qInfo() << "Tunnel gateway is undefined";
+                        emit instance()->sigTunGatewayUndefined();
+                    }
                 } else {
                     qInfo() << "Other gateway is undefined";
                     emit instance()->sigOtherGatewayUndefined();
@@ -64,8 +69,34 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                 }
             }
         }
+    } else if(notification.type == IP_LINK_NEW || notification.type == IP_LINK_DEL){
+        qInfo() << QString("Interface %1 is %2 %3 %4")
+                    .arg(notification.link.interface_name)
+                    .arg(( (notification.type == IP_LINK_NEW && notification.link.is_up) ? "UP" : "DOWN") )
+                    .arg((notification.type == IP_LINK_NEW ? "and" : ""))
+                    .arg((notification.type == IP_LINK_NEW ?
+                         (notification.link.is_running ? "RUNNING" : "NOT RUNNING")
+                            : ""));
+
+        if((notification.type == IP_LINK_NEW && !notification.link.is_running) || notification.type == IP_LINK_DEL)
+            emit instance()->sigInterfaceUndefined();
+        else
+            emit instance()->sigInterfaceDefined();
     }
 
+}
+
+bool DapNetworkMonitorLinux::checkTunnelGw()
+{
+    int ret;
+    if(instance()->m_tunnelGateway.size() > 0){
+        ret =  ::system(QString("netstat -rn | grep 'UG ' | grep %1 > /dev/null ").arg(instance()->m_tunnelGateway)
+                        .toLatin1().constData());
+        if(ret == 0 ){
+            return true;
+        }
+    }
+    return false;
 }
 
 DapNetworkMonitorLinux::DapNetworkMonitorLinux(QObject *parent):
