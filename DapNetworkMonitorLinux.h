@@ -1,6 +1,4 @@
-#ifndef NETWORKMONITORLINUX_H
-#define NETWORKMONITORLINUX_H
-
+#pragma once
 #include "DapNetworkMonitorAbstract.h"
 #include "DapMonitorCmdProgram.h"
 #include "dap_network_monitor.h"
@@ -29,5 +27,3 @@ public slots:
     bool monitoringStart() override;
     bool monitoringStop() override;
 };
-
-#endif // NETWORKMONITORLINUX_H
