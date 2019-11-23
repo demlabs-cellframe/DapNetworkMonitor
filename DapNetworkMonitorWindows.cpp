@@ -1,126 +1,111 @@
-#include <winsock2.h>
-#include <iphlpapi.h>
-
 #include <QThread>
 
 #include "DapNetworkMonitorWindows.h"
-#include "tuntap.h"
 
 DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent):
-    DapNetworkMonitorAbstract(parent)
-{
-    qInfo() << "starting Windows network monitor";
+    DapNetworkMonitorAbstract(parent) {
+    qInfo() << "Dap Network Monitor started";
      QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
 }
 
-char *DapNetworkMonitorWindows::readRegKey(HKEY hKey, LPCSTR regSubKey, LPCSTR val) {
-    size_t bufSize = 128;
-    char *ret = (char*)malloc(bufSize);
-    DWORD dwSize = (DWORD)bufSize;
-    LSTATUS err = RegGetValueA(hKey, regSubKey, val, RRF_RT_REG_SZ, NULL, (void*)ret, &dwSize);
-    if (err == ERROR_SUCCESS) {
-        return ret;
-    } else {
-        free(ret);
-        return NULL;
-    }
+bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
+    return (getTapGUID() != NULL);
 }
 
-bool DapNetworkMonitorWindows::isTunDriverInstalled() const
-{
-    const char keyPath[] = "SYSTEM\\CurrentControlSet\\Control\\Class\\{4D36E972-E325-11CE-BFC1-08002BE10318}";
-    HKEY baseKey;
-    LSTATUS err = RegOpenKeyExA(HKEY_LOCAL_MACHINE, keyPath, 0
-                  ,KEY_ENUMERATE_SUB_KEYS | KEY_WOW64_64KEY | KEY_READ
-                  ,&baseKey);
-    if (err != ERROR_SUCCESS) {
-        return NULL;
-    }
-    DWORD index;
-    char tmp[128] = {'\0'};
-    for (index = 0; ; ++index) {
-        char hKey[MAX_PATH];
-        DWORD len = MAX_PATH;
-        if (RegEnumKeyExA(baseKey, index, hKey, &len, NULL, NULL, NULL, NULL) != ERROR_SUCCESS) {
-            break;
-        }
-        char *tmp2 = readRegKey(baseKey, hKey, "ComponentId");
-        if (tmp2) {
-            strcpy(tmp, tmp2);
-            free(tmp2);
-            if (strcmp(tmp, "tap0901") == 0) return true;
-            memset(tmp, '\0', sizeof(tmp));
-        }
-    }
-    return false;
-}
-
-bool DapNetworkMonitorWindows::isTunGatewayDefined() const
-{
+bool DapNetworkMonitorWindows::isTunGatewayDefined() const {
     return m_isTunGatewayDefined;
 }
-bool DapNetworkMonitorWindows::isOtherGatewayDefined() const
-{
+
+bool DapNetworkMonitorWindows::isOtherGatewayDefined() const {
     return m_isOtherGatewayDefined;
 }
 
-bool DapNetworkMonitorWindows::monitoringStart()
-{
+bool DapNetworkMonitorWindows::monitoringStart() {
     QMutexLocker lock(&mutex);
     m_isMonitoringRunning = true;
     return m_isMonitoringRunning;
 }
 
-bool DapNetworkMonitorWindows::monitoringStop()
-{
+bool DapNetworkMonitorWindows::monitoringStop() {
     QMutexLocker lock(&mutex);
     m_isMonitoringRunning = false;
     return m_isMonitoringRunning;
 }
 
+void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route, MIB_NOTIFICATION_TYPE type) {
+    if (!(instance()->m_isMonitoringRunning)) {
+        return;
+    }
+    switch (type) {
+    case MibAddInstance:
+        if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
+            emit instance()->sigTunGatewayDefined();
+            qWarning() << "Default gateway is set";
+        }
+        break;
+    case MibDeleteInstance:
+        if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
+            emit instance()->sigTunGatewayUndefined();
+            qWarning() << "Default gateway is removed from route table";
+        }
+        break;
+    case MibParameterNotification:
+        qWarning() << "Some changes touched the route table";
+        break;
+    default:
+        break;
+    }
+}
+
+void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, MIB_NOTIFICATION_TYPE type) {
+    if (!(instance()->m_isMonitoringRunning)) {
+        return;
+    }
+    switch (type) {
+    case MibAddInstance:
+        qWarning() << "Adapter [ " << row->InterfaceIndex << " ] enabled";
+        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
+                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+            emit instance()->sigInterfaceDefined();
+        }
+        break;
+    case MibDeleteInstance:
+        qWarning() << "Adapter [ " << row->InterfaceIndex << " ] disabled";
+        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
+                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+            emit instance()->sigInterfaceUndefined();
+        }
+        break;
+    case MibParameterNotification:
+        qWarning() << "Adapter [ " << row->InterfaceIndex << " ] settings changed";
+        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
+                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+            if (row->Connected) {
+                qWarning() << "[ " << row->InterfaceIndex << " ] enabled";
+                emit instance()->sigInterfaceDefined();
+            } else {
+                qWarning() << "[ " << row->InterfaceIndex << " ] disabled";
+                emit instance()->sigInterfaceUndefined();
+            }
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 void DapNetworkMonitorWindows::internalWorker() {
     HANDLE hAddrChange, hRouteChange;
-    OVERLAPPED ovAddrChange, ovRouteChange;
+    unsigned int ctx = 0;
 
-    ovAddrChange.hEvent  = WSACreateEvent();
-    ovRouteChange.hEvent = WSACreateEvent();
-
-    bool bNoDefaultGateWay = false;
-
-    while (true)
-    {
-        DWORD dwRet = NotifyAddrChange(&hAddrChange, &ovAddrChange);
-        if ( dwRet != NO_ERROR && WSAGetLastError() != WSA_IO_PENDING ) {
-            qDebug() << "NotifyAddrChange failed, error code ==" << QString::number(WSAGetLastError())
-                     << ", shutdown DapNetworkWindowsMonitor";
-            return;
-        }
-
-        if ( (dwRet = NotifyRouteChange(&hRouteChange, &ovRouteChange)) != NO_ERROR && WSAGetLastError() != WSA_IO_PENDING ) {
-            qDebug() << "NotifyRouteChange failed, error code ==" << QString::number(WSAGetLastError())
-                     << ", shutdown DapNetworkWindowsMonitor";
-            return;
-        }
-
-        HANDLE hEvents[2] = {ovAddrChange.hEvent, ovRouteChange.hEvent};
-
-        dwRet = WaitForMultipleObjects(sizeof(hEvents)/sizeof(HANDLE), hEvents, false, INFINITE);
-
-        if ( m_isMonitoringRunning && ( dwRet == WAIT_OBJECT_0 || dwRet == (WAIT_OBJECT_0 + 1) ) ) {
-            qDebug() << "[DapNetworkWindowsMonitor] : some event happend";
-            emit sigRouteChanged();
-
-            if (!TunTap::getInstance().getDefaultGateWayCount() && !bNoDefaultGateWay) {
-                bNoDefaultGateWay = true;
-                qDebug() << "[SapNetworkWindowsMonitor] : happend sigDefaultGatewayUndefined situation";
-                emit sigTunGatewayUndefined();
-            }
-
-            if (TunTap::getInstance().getDefaultGateWayCount() && bNoDefaultGateWay) {
-                bNoDefaultGateWay = false;
-                qDebug() << "[SapNetworkWindowsMonitor] : happend sigDefaultGatewayDefined situation";
-                emit sigTunGatewayDefined();
-            }
-        }
+    DWORD res = NotifyRouteChange2(AF_INET, cbRouteChanged, &ctx, TRUE, &hRouteChange);
+    if (res != NO_ERROR) {
+        qCritical() << "Can't trace route table, error " << res;
+        return;
+    }
+    res = NotifyIpInterfaceChange(AF_INET, cbIfaceChanged, &ctx, TRUE, &hAddrChange);
+    if (res != NO_ERROR) {
+        qCritical() << "Can't trace network interfaces, error " << res;
+        return;
     }
 }
