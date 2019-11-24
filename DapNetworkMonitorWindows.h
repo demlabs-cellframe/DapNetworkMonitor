@@ -3,7 +3,7 @@
 
 #include "DapNetworkMonitorAbstract.h"
 #include <QtConcurrent/QtConcurrent>
-#include <windows.h>
+#include "tuntap.h"
 
 class DapNetworkMonitorWindows : public DapNetworkMonitorAbstract
 {
@@ -25,12 +25,16 @@ public:
 
 private:
     void internalWorker();
-    static char *readRegKey(HKEY, LPCSTR, LPCSTR);
     QMutex mutex;
 
+    ulong m_TapAdapterIndex = 0, m_DefaultAdapterIndex = 0;
+    static void cbRouteChanged(void *ctx, PMIB_IPFORWARD_ROW2 route, MIB_NOTIFICATION_TYPE type);
+    static void cbIfaceChanged(void *ctx, PMIB_IPINTERFACE_ROW row, MIB_NOTIFICATION_TYPE type);
 signals:
 
 public slots:
+    void sltSetTapIfIndex   (const ulong index) { m_TapAdapterIndex = index; }
+    void sltSetIfIndex      (const ulong index) { m_DefaultAdapterIndex = index; }
 };
 
 #endif // NETWORKMONITORWINDOWS_H
