@@ -1,11 +1,13 @@
-SOURCES += \
-    $$PWD/DapNetworkMonitorAbstract.cpp \
-    $$PWD/DapMonitorCmdProgram.cpp
+SOURCES += $$PWD/DapNetworkMonitorAbstract.cpp
 
 HEADERS += \
     $$PWD/DapNetworkMonitor.h \
-    $$PWD/DapNetworkMonitorAbstract.h \
-    $$PWD/DapMonitorCmdProgram.h
+    $$PWD/DapNetworkMonitorAbstract.h
+
+!ios {
+HEADERS += $$PWD/DapMonitorCmdProgram.h
+SOURCES += $$PWD/DapMonitorCmdProgram.cpp
+}
 
 win32 {
     SOURCES += $$PWD/DapNetworkMonitorWindows.cpp
@@ -35,10 +37,18 @@ android {
 macos {
 LIBS += -framework Foundation
 LIBS += -framework CoreFoundation
-#LIBS += -framework NetworkExtension
 LIBS += -framework SystemConfiguration
+}
+
+macosx: !ios {
 SOURCES += $$PWD/DapNetworkMonitorDarwin.cpp
 HEADERS += $$PWD/DapNetworkMonitorDarwin.h
+}
+
+ios {
+LIBS += -framework NetworkExtension
+HEADERS += $$PWD/DapNetworkMonitorIOS.h
+SOURCES += $$PWD/DapNetworkMonitorIOS.cpp
 }
 
 INCLUDEPATH += $$PWD
