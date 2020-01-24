@@ -9,7 +9,7 @@ DapNetworkMonitorAndroid::DapNetworkMonitorAndroid(QObject *parent):
 bool DapNetworkMonitorAndroid::isTunDriverInstalled() const
 {
     // TODO
-    return false;
+    return true;
 }
 
 bool DapNetworkMonitorAndroid::monitoringStart()
