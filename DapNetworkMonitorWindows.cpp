@@ -78,15 +78,20 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
         break;
     case MibParameterNotification:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] settings changed";
-        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
+        if (//row->InterfaceIndex == instance()->m_TapAdapterIndex ||
                 row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
-            if (row->Connected) {
-                qWarning() << "[ " << row->InterfaceIndex << " ] enabled";
-                emit instance()->sigInterfaceDefined();
-            } else {
-                qWarning() << "[ " << row->InterfaceIndex << " ] disabled";
-                emit instance()->sigInterfaceUndefined();
-            }
+                    MIB_IF_ROW2 row2;
+                    ZeroMemory(&row2, sizeof(row2));
+                    row2.InterfaceIndex = instance()->m_DefaultAdapterIndex;
+                    GetIfEntry2(&row2);
+                    if (row2.MediaConnectState == MediaConnectStateConnected) {
+                        qWarning() << "Adapter [ " << row->InterfaceIndex << " ] enabled";
+                        emit instance()->sigInterfaceDefined();
+                    } else {
+                        qWarning() << "Adapter [ " << row->InterfaceIndex << " ] disabled";
+                        emit instance()->sigInterfaceUndefined();
+                    }
+
         }
         break;
     default:
