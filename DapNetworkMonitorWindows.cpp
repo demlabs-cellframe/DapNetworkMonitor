@@ -40,7 +40,10 @@ void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route,
     case MibAddInstance:
         if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
             emit instance()->sigTunGatewayDefined();
-            qWarning() << "Default gateway is set";
+            qWarning() << "Default gateway is set with if metric " << route->Metric;
+            /*if (TunTap::getInstance()) {
+                TunTap::getInstance().enableDefaultRoutes(route->InterfaceIndex, false);
+            }*/
         }
         break;
     case MibDeleteInstance:
@@ -64,27 +67,36 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
     switch (type) {
     case MibAddInstance:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] enabled";
-        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+        if (row->InterfaceIndex == TunTap::getInstance().getTunTapAdapterIndex() ||
+                row->InterfaceIndex == TunTap::getInstance().getDefaultAdapterIndex()) {
             emit instance()->sigInterfaceDefined();
+        } else if (TunTap::getInstance()) {
+            TunTap::getInstance().enableDefaultRoutes(row->InterfaceIndex, false);
         }
         break;
     case MibDeleteInstance:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] disabled";
-        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+        if (//row->InterfaceIndex == instance()->m_TapAdapterIndex ||
+                row->InterfaceIndex == TunTap::getInstance().getDefaultAdapterIndex()) {
             emit instance()->sigInterfaceUndefined();
         }
         break;
     case MibParameterNotification:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] settings changed";
-        if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
-            if (row->Connected) {
-                qWarning() << "[ " << row->InterfaceIndex << " ] enabled";
-                emit instance()->sigInterfaceDefined();
-            } else {
-                qWarning() << "[ " << row->InterfaceIndex << " ] disabled";
+        MIB_IF_ROW2 row2;
+        ZeroMemory(&row2, sizeof(row2));
+        row2.InterfaceIndex = row->InterfaceIndex;//;
+        GetIfEntry2(&row2);
+        if (row2.MediaConnectState == MediaConnectStateConnected) {
+            qWarning() << "Adapter [ " << row->InterfaceIndex << " ] enabled";
+            emit instance()->sigInterfaceDefined();
+
+            if (TunTap::getInstance() and (row2.InterfaceIndex != TunTap::getInstance().getDefaultAdapterIndex()) and (row2.InterfaceIndex != TunTap::getInstance().getTunTapAdapterIndex())) {
+                TunTap::getInstance().enableDefaultRoutes(row->InterfaceIndex, false);
+            }
+        } else {
+            qWarning() << "Adapter [ " << row->InterfaceIndex << " ] disabled";
+            if (row2.InterfaceIndex == TunTap::getInstance().getDefaultAdapterIndex()) {
                 emit instance()->sigInterfaceUndefined();
             }
         }

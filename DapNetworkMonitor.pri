@@ -11,12 +11,7 @@ win32 {
     SOURCES += $$PWD/DapNetworkMonitorWindows.cpp
     HEADERS += $$PWD/DapNetworkMonitorWindows.h
 
-    LIBS += -lWS2_32
-    LIBS += -lAdvapi32
-    LIBS += -lIphlpapi
-    LIBS += -lUser32
-    LIBS += -lole32
-    LIBS += -luuid
+    LIBS += -ladvapi32 -luuid -liphlpapi -lnetshell -luser32 -lws2_32 -lole32 -ldnsapi -ldhcpcsvc
 
     DEFINES += NTDDI_VERSION=0x06000000
     DEFINES += _WIN32_WINNT=0x0600
