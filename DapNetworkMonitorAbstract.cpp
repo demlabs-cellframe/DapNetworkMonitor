@@ -16,7 +16,7 @@ DapNetworkMonitorAbstract::DapNetworkMonitorAbstract(QObject *parent)
 
     connect(this, &DapNetworkMonitorAbstract::sigTunGatewayDefined, [=]{
         m_isTunGatewayDefined = true;
-        m_isOtherGatewayDefined = false;
+        //m_isOtherGatewayDefined = false;
     });
 
     connect(this, &DapNetworkMonitorAbstract::sigTunGatewayUndefined, [=]{
@@ -25,7 +25,7 @@ DapNetworkMonitorAbstract::DapNetworkMonitorAbstract(QObject *parent)
 
     connect(this, &DapNetworkMonitorAbstract::sigOtherGatewayDefined, [=]{
         m_isOtherGatewayDefined = true;
-        m_isTunGatewayDefined = false;
+        //m_isTunGatewayDefined = false;
     });
 
     connect(this, &DapNetworkMonitorAbstract::sigOtherGatewayUndefined, [=]{

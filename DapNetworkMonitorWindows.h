@@ -18,8 +18,6 @@ public:
 
 
     bool isTunDriverInstalled() const override;
-    bool isTunGatewayDefined() const;
-    bool isOtherGatewayDefined() const;
     bool monitoringStart() override;
     bool monitoringStop() override;
 
