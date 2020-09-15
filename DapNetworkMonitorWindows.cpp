@@ -12,14 +12,6 @@ bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
     return (getTapGUID() != NULL);
 }
 
-bool DapNetworkMonitorWindows::isTunGatewayDefined() const {
-    return m_isTunGatewayDefined;
-}
-
-bool DapNetworkMonitorWindows::isOtherGatewayDefined() const {
-    return m_isOtherGatewayDefined;
-}
-
 bool DapNetworkMonitorWindows::monitoringStart() {
     QMutexLocker lock(&mutex);
     m_isMonitoringRunning = true;
