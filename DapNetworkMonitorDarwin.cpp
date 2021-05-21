@@ -51,10 +51,7 @@ DapNetworkMonitorDarwin::DapNetworkMonitorDarwin(QObject *parent):
 
 bool DapNetworkMonitorDarwin::isTunDriverInstalled() const
 {
-    QFileInfo fi(QString("/dev/tun5"));
-    if(fi.exists())
-        return true;
-    return false;
+    return true; // TODO make com.apple.developer.networking.networkextension entitlement check
 }
 
 
