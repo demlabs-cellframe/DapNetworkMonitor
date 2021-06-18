@@ -33,12 +33,12 @@ android {
 }
 
 macos {
-LIBS += -framework Foundation
-LIBS += -framework CoreFoundation
-#LIBS += -framework NetworkExtension
-LIBS += -framework SystemConfiguration
-SOURCES += $$PWD/DapNetworkMonitorDarwin.cpp
-HEADERS += $$PWD/DapNetworkMonitorDarwin.h
+    LIBS += -framework Foundation
+    LIBS += -framework CoreFoundation
+    #LIBS += -framework NetworkExtension
+    LIBS += -framework SystemConfiguration
+    SOURCES += $$PWD/DapNetworkMonitorDarwin.cpp
+    HEADERS += $$PWD/DapNetworkMonitorDarwin.h
 }
 
 INCLUDEPATH += $$PWD
