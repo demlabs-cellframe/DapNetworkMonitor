@@ -18,6 +18,7 @@ protected:
 
     bool m_isTunGatewayDefined = false;
     bool m_isOtherGatewayDefined = false;
+    bool m_isInterfaceDefined = false;
 public:
     explicit DapNetworkMonitorAbstract(QObject *parent = Q_NULLPTR);
 
@@ -27,7 +28,7 @@ public:
 
     virtual bool isTunGatewayDefined() final   { return  m_isTunGatewayDefined; }
     virtual bool isOtherGatewayDefined() final { return  m_isOtherGatewayDefined; }
-
+    virtual bool isInterfaceDefined() final    { return m_isInterfaceDefined; }
     virtual bool isMonitoringRunning() const final { return m_isMonitoringRunning; }
 
     bool isUpstreamRoute(const QString& destination, const QString& gateway)  {

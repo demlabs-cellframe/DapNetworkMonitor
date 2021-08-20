@@ -68,7 +68,7 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
             emit instance()->sigInterfaceUndefined();
         }
         break;
-    case MibParameterNotification:
+    /*case MibParameterNotification:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] settings changed";
         if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
                 row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
@@ -81,6 +81,7 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
             }
         }
         break;
+        */
     default:
         break;
     }
