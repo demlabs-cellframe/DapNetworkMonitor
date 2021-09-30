@@ -3,7 +3,9 @@
 DapNetworkMonitorAndroid::DapNetworkMonitorAndroid(QObject *parent):
     DapNetworkMonitorAbstract(parent)
 {
-    m_isTunGatewayDefined = true;
+    m_isTunGatewayDefined.store(true);
+    m_isInterfaceDefined.store(true);
+    m_isHostReachable.store(true);
 }
 
 bool DapNetworkMonitorAndroid::isTunDriverInstalled() const
