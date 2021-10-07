@@ -1,4 +1,5 @@
 #include "DapNetworkMonitorAndroid.h"
+#include <errno.h>
 
 DapNetworkMonitorAndroid::DapNetworkMonitorAndroid(QObject *parent):
     DapNetworkMonitorAbstract(parent)
@@ -24,4 +25,18 @@ bool DapNetworkMonitorAndroid::monitoringStop()
 {
     // TODO
     return false;
+}
+
+void DapNetworkMonitorAndroid::procErr(const int a_err, const QString &a_str) {
+    Q_UNUSED(a_str)
+    switch (a_err) {
+    case ENETUNREACH:
+    case EHOSTUNREACH:
+    case ENOLINK:
+    case ENETDOWN:
+        m_isHostReachable.store(false);
+        break;
+    default:
+        break;
+    }
 }

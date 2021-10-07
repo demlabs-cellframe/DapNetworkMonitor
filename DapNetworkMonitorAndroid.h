@@ -19,6 +19,7 @@ public:
 signals:
 
 public slots:
+    void procErr(const int, const QString&);
 };
 
 #endif // NETWORKMONITORANDROID_H
