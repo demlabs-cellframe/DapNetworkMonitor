@@ -2,10 +2,9 @@
 
 #include "DapNetworkMonitorWindows.h"
 
-DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent):
-    DapNetworkMonitorAbstract(parent) {
+DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent): DapNetworkMonitorAbstract(parent) {
     qInfo() << "Dap Network Monitor started";
-     QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
+    QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
 }
 
 bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
@@ -13,36 +12,43 @@ bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
 }
 
 bool DapNetworkMonitorWindows::monitoringStart() {
-    QMutexLocker lock(&mutex);
-    m_isMonitoringRunning = true;
+    m_isMonitoringRunning.store(true);
     return m_isMonitoringRunning;
 }
 
 bool DapNetworkMonitorWindows::monitoringStop() {
-    QMutexLocker lock(&mutex);
-    m_isMonitoringRunning = false;
+    m_isMonitoringRunning.store(false);
     return m_isMonitoringRunning;
 }
 
 void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route, MIB_NOTIFICATION_TYPE type) {
-    if (!(instance()->m_isMonitoringRunning)) {
+    if (!instance()->m_isMonitoringRunning.load()) {
         return;
     }
     switch (type) {
     case MibAddInstance:
         if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
-            emit instance()->sigTunGatewayDefined();
-            qWarning() << "Default gateway is set";
+            if (route->InterfaceIndex == instance()->m_TapAdapterIndex ||
+                    route->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+                instance()->m_isTunGatewayDefined.store(true);
+                emit instance()->sigTunGatewayDefined();
+            }
+            qInfo() << "Set default gw on interface [ " << route->InterfaceIndex << " ]";
         }
         break;
     case MibDeleteInstance:
         if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
-            emit instance()->sigTunGatewayUndefined();
-            qWarning() << "Default gateway is removed from route table";
+            if (route->InterfaceIndex == instance()->m_TapAdapterIndex ||
+                    route->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+                instance()->m_isTunGatewayDefined.store(false);
+                emit instance()->sigTunGatewayUndefined();
+            }
+            qInfo() << "Removed default gw on interface [ " << route->InterfaceIndex << " ]";
         }
         break;
     case MibParameterNotification:
-        qWarning() << "Some changes touched the route table";
+        qInfo() << "Changed gw " << inet_ntoa(route->NextHop.Ipv4.sin_addr) <<
+                   " on inteface [ " << route->InterfaceIndex << " ]";
         break;
     default:
         break;
@@ -50,7 +56,7 @@ void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route,
 }
 
 void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, MIB_NOTIFICATION_TYPE type) {
-    if (!(instance()->m_isMonitoringRunning)) {
+    if (!instance()->m_isMonitoringRunning.load()) {
         return;
     }
     switch (type) {
@@ -58,6 +64,7 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] enabled";
         if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
                 row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+            instance()->m_isInterfaceDefined.store(true);
             emit instance()->sigInterfaceDefined();
         }
         break;
@@ -65,10 +72,11 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] disabled";
         if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
                 row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+            instance()->m_isInterfaceDefined.store(false);
             emit instance()->sigInterfaceUndefined();
         }
         break;
-    case MibParameterNotification:
+    /*case MibParameterNotification:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] settings changed";
         if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
                 row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
@@ -81,6 +89,7 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
             }
         }
         break;
+        */
     default:
         break;
     }
@@ -99,5 +108,18 @@ void DapNetworkMonitorWindows::internalWorker() {
     if (res != NO_ERROR) {
         qCritical() << "Can't trace network interfaces, error " << res;
         return;
+    }
+}
+
+void DapNetworkMonitorWindows::procErr(const int a_err, const QString &a_str) {
+    Q_UNUSED(a_str)
+    switch (a_err) {
+    case WSAEACCES:
+    case WSAENETUNREACH:
+    case WSAEHOSTUNREACH:
+        m_isHostReachable.store(false);
+        break;
+    default:
+        break;
     }
 }

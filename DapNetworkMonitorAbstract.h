@@ -3,6 +3,7 @@
 
 #include <QDebug>
 #include <QObject>
+#include <atomic>
 
 class DapNetworkMonitorAbstract : public QObject
 {
@@ -14,10 +15,7 @@ protected:
     QString m_serverAddress;
     QString m_tunnelGateway;
 
-    bool m_isMonitoringRunning = false;
-
-    bool m_isTunGatewayDefined = false;
-    bool m_isOtherGatewayDefined = false;
+    std::atomic<bool> m_isMonitoringRunning, m_isTunGatewayDefined, m_isOtherGatewayDefined, m_isInterfaceDefined, m_isHostReachable;
 public:
     explicit DapNetworkMonitorAbstract(QObject *parent = Q_NULLPTR);
 
@@ -25,10 +23,11 @@ public:
 
     virtual bool isTunDriverInstalled() const = 0;
 
-    virtual bool isTunGatewayDefined() final   { return  m_isTunGatewayDefined; }
-    virtual bool isOtherGatewayDefined() final { return  m_isOtherGatewayDefined; }
-
-    virtual bool isMonitoringRunning() const final { return m_isMonitoringRunning; }
+    virtual bool isTunGatewayDefined() final   { return  m_isTunGatewayDefined.load(); }
+    virtual bool isOtherGatewayDefined() final { return  m_isOtherGatewayDefined.load(); }
+    virtual bool isInterfaceDefined() final    { return m_isInterfaceDefined.load(); }
+    virtual bool isMonitoringRunning() const final { return m_isMonitoringRunning.load(); }
+    virtual bool isHostReachable() const final { return m_isHostReachable.load(); }
 
     bool isUpstreamRoute(const QString& destination, const QString& gateway)  {
         return destination == m_serverAddress && gateway == m_defaultGateway;
@@ -56,6 +55,7 @@ public slots:
     void sltSetTunGateway(const QString& gw) { m_tunnelGateway = gw; }
     void sltSetServerAddress(const QString& servAddr) { m_serverAddress = servAddr; }
     void sltSetTunnelDestination(const QString& tunDest) { m_tunnelDestination = tunDest; }
+    void sltSetHostReachable(bool b) { m_isHostReachable.store(b); }
 
     // returns true if operation successfully
     virtual bool monitoringStart() = 0;
