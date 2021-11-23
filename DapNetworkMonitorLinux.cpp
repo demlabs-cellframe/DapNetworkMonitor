@@ -102,7 +102,10 @@ bool DapNetworkMonitorLinux::checkTunnelGw()
 DapNetworkMonitorLinux::DapNetworkMonitorLinux(QObject *parent):
     DapNetworkMonitorAbstract(parent)
 {
-
+    m_isTunGatewayDefined.store(true);
+    m_isInterfaceDefined.store(true);
+    m_isHostReachable.store(true);
+    m_isOtherGatewayDefined.store(true);
 }
 
 bool DapNetworkMonitorLinux::isTunDriverInstalled() const
