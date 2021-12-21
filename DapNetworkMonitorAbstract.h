@@ -56,6 +56,7 @@ public slots:
     void sltSetServerAddress(const QString& servAddr) { m_serverAddress = servAddr; }
     void sltSetTunnelDestination(const QString& tunDest) { m_tunnelDestination = tunDest; }
     void sltSetHostReachable(bool b) { m_isHostReachable.store(b); }
+    void sltSetAdpDefined(bool b) { m_isInterfaceDefined.store(b); }
 
     // returns true if operation successfully
     virtual bool monitoringStart() = 0;
