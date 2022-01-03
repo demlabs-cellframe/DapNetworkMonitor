@@ -78,7 +78,7 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                          (notification.link.is_running ? "RUNNING" : "NOT RUNNING")
                             : ""));
 
-        if((notification.type == IP_LINK_NEW && !notification.link.is_running) || notification.type == IP_LINK_DEL)
+        if(/*(notification.type == IP_LINK_NEW && !notification.link.is_running) || */notification.type == IP_LINK_DEL)
             emit instance()->sigInterfaceUndefined();
         else
             emit instance()->sigInterfaceDefined();
