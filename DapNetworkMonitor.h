@@ -15,6 +15,9 @@ typedef class DapNetworkMonitorWindows DapNetworkMonitor;
 #elif defined(Q_OS_DARWIN)
 #include "DapNetworkMonitorDarwin.h"
 typedef class DapNetworkMonitorDarwin DapNetworkMonitor;
+#elif defined(Q_OS_IOS)
+#include "DapNetworkMonitorIOS.h"
+typedef class DapNetworkMonitorIOS DapNetworkMonitor;
 #endif
 
 #endif // DAPNETWORKMONITOR_H

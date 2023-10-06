@@ -41,4 +41,13 @@ macos {
     HEADERS += $$PWD/DapNetworkMonitorDarwin.h
 }
 
+ios {
+    QT += macextras
+    LIBS += -framework Foundation
+    LIBS += -framework CoreFoundation
+    LIBS += -framework SystemConfiguration
+    SOURCES += $$PWD/DapNetworkMonitorIOS.mm
+    HEADERS += $$PWD/DapNetworkMonitorIOS.h
+}
+
 INCLUDEPATH += $$PWD
