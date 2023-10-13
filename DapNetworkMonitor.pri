@@ -42,7 +42,7 @@ macos {
 }
 
 ios {
-    QT += macextras
+    QT += macextras core
     LIBS += -framework Foundation
     LIBS += -framework CoreFoundation
     LIBS += -framework SystemConfiguration
