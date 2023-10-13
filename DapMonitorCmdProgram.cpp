@@ -35,6 +35,7 @@ void DapMonitorCmdProgram::sltReadProgramOutput()
 
 void DapMonitorCmdProgram::start()
 {
+#ifndef Q_OS_IOS
     if(m_isRunning) {
         qWarning() << "Can't start monitoring. He is already started";
         return;
@@ -61,6 +62,7 @@ void DapMonitorCmdProgram::start()
     });
 
     m_process->start(m_name, m_args);
+#endif
 }
 
 void DapMonitorCmdProgram::stop()

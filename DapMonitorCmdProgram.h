@@ -14,8 +14,9 @@ private:
 
     QString m_name;
     QStringList m_args;
+#ifndef Q_OS_IOS
     QProcess* m_process;
-
+#endif
     bool m_isRunning = false;
     char m_outputBuffer[MAX_LINE_LENGTH];
 public:
