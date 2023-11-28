@@ -28,7 +28,7 @@ signals:
     void sigFinished();
     void sigStartError();
 private slots:
-    void sltProcessFinished();
+    void sltProcessFinished(int, QProcess::ExitStatus);
     void sltReadProgramOutput();
 public slots:
     void start();

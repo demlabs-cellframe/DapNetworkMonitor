@@ -8,7 +8,7 @@ DapMonitorCmdProgram::DapMonitorCmdProgram(const QString& name,
 
 }
 
-void DapMonitorCmdProgram::sltProcessFinished()
+void DapMonitorCmdProgram::sltProcessFinished(int, QProcess::ExitStatus)
 {
     qDebug() << "sltProcessFinished";
     m_isRunning = false;
@@ -41,14 +41,14 @@ void DapMonitorCmdProgram::start()
     }
     m_process = new QProcess(this);
 
-    connect(m_process,static_cast<void (QProcess::*)(int)>(&QProcess::finished),
+    connect(m_process,static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
             this, &DapMonitorCmdProgram::sltProcessFinished);
 
     connect(m_process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
         qCritical() << "Monitoring process: " << error;
         if(error == QProcess::ProcessError::FailedToStart) {
             emit sigStartError();
-            sltProcessFinished();
+            sltProcessFinished(-1, QProcess::CrashExit);
         }
     });
 
