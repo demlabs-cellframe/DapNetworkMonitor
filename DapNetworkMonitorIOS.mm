@@ -16,7 +16,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkConne
 }
 
 + (DapNetworkMonitorIOS *)sharedInstance {
-    static DapNetworkMonitorIOS *instance = nil;
+    static DapNetworkMonitorIOS *instance = NULL;
     /*static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         instance = [[DapNetworkMonitorIOS alloc] init];
@@ -25,7 +25,7 @@ static void ReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkConne
 }
 
 - (instancetype)init {
-    self = nil;
+    self = NULL;
 //    if (self) {
 //        SCNetworkReachabilityContext context = {0, (__bridge void *)self, NULL, NULL, NULL};
 //        self.reachabilityRef = SCNetworkReachabilityCreateWithAddress(NULL, (const struct sockaddr *)&zeroAddress);

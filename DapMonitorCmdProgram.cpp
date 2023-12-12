@@ -10,14 +10,17 @@ DapMonitorCmdProgram::DapMonitorCmdProgram(const QString& name,
 
 void DapMonitorCmdProgram::sltProcessFinished()
 {
+#ifndef Q_OS_IOS
     qDebug() << "sltProcessFinished";
     m_isRunning = false;
     m_process->deleteLater();
     emit sigFinished();
+#endif
 }
 
 void DapMonitorCmdProgram::sltReadProgramOutput()
 {
+#ifndef Q_OS_IOS
     while (!m_process->atEnd()) {
         qint64 count_bytes = m_process->readLine(m_outputBuffer, MAX_LINE_LENGTH);
         if(count_bytes == 0) {
@@ -31,6 +34,7 @@ void DapMonitorCmdProgram::sltReadProgramOutput()
         // qDebug() << "monitoring proces out:" << m_outputBuffer;
         sigProgramOutput(m_outputBuffer);
     }
+#endif
 }
 
 void DapMonitorCmdProgram::start()
@@ -67,5 +71,7 @@ void DapMonitorCmdProgram::start()
 
 void DapMonitorCmdProgram::stop()
 {
+#ifndef Q_OS_IOS
     m_process->kill();
+#endif
 }
