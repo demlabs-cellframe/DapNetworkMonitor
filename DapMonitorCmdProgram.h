@@ -12,8 +12,9 @@ private:
 
     QString m_name;
     QStringList m_args;
+#ifndef Q_OS_IOS
     QProcess* m_process;
-
+#endif
     bool m_isRunning = false;
     char m_outputBuffer[MAX_LINE_LENGTH];
 public:
@@ -28,7 +29,9 @@ signals:
     void sigFinished();
     void sigStartError();
 private slots:
+#ifndef Q_OS_IOS
     void sltProcessFinished(int, QProcess::ExitStatus);
+#endif
     void sltReadProgramOutput();
 public slots:
     void start();

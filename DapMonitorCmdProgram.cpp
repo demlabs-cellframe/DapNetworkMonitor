@@ -39,8 +39,8 @@ void DapMonitorCmdProgram::start()
         qWarning() << "Can't start monitoring. He is already started";
         return;
     }
+#ifndef Q_OS_IOS
     m_process = new QProcess(this);
-
     connect(m_process,static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
             this, &DapMonitorCmdProgram::sltProcessFinished);
 
@@ -50,6 +50,7 @@ void DapMonitorCmdProgram::start()
             emit sigStartError();
             sltProcessFinished(-1, QProcess::CrashExit);
         }
+#endif
     });
 
     connect(m_process, &QProcess::readyRead, this, &DapMonitorCmdProgram::sltReadProgramOutput);
