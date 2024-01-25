@@ -8,14 +8,14 @@ public:
     explicit DapNetworkMonitorIOS(QObject *parent = Q_NULLPTR);
 
     static DapNetworkMonitorIOS* instance()
-    { static DapNetworkMonitorIOS client; return &client; }
+    {  }
 
-    bool isTunDriverInstalled() const override;
-    bool monitoringStart();
-    bool monitoringStop() override;
+//     bool isTunDriverInstalled() const override;
+//     bool monitoringStart();
+//     bool monitoringStop() override;
 
-signals:
+// signals:
 
-public slots:
-    void procErr(const int, const QString&);
+// public slots:
+//     void procErr(const int, const QString&);
 };
