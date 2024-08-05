@@ -50,6 +50,8 @@ signals:
     void sigMonitoringStarted();
     void sigMonitoringStartError();
 
+    void sigTunCreate();
+
 public slots:
     void sltSetDefaultGateway(const QString& gw) { m_defaultGateway = gw; }
     void sltSetTunGateway(const QString& gw) { m_tunnelGateway = gw; }
@@ -57,6 +59,7 @@ public slots:
     void sltSetTunnelDestination(const QString& tunDest) { m_tunnelDestination = tunDest; }
     void sltSetHostReachable(bool b) { m_isHostReachable.store(b); }
     void sltSetAdpDefined(bool b) { m_isInterfaceDefined.store(b); }
+    virtual bool handleNetworkFailure() = 0;
 
     // returns true if operation successfully
     virtual bool monitoringStart() = 0;
