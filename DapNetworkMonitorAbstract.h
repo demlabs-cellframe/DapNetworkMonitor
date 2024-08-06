@@ -59,7 +59,7 @@ public slots:
     void sltSetTunnelDestination(const QString& tunDest) { m_tunnelDestination = tunDest; }
     void sltSetHostReachable(bool b) { m_isHostReachable.store(b); }
     void sltSetAdpDefined(bool b) { m_isInterfaceDefined.store(b); }
-    virtual bool handleNetworkFailure() = 0;
+    virtual bool handleNetworkFailure() { return false; }
 
     // returns true if operation successfully
     virtual bool monitoringStart() = 0;
