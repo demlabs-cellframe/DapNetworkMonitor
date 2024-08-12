@@ -26,4 +26,5 @@ signals:
 public slots:
     bool monitoringStart() override;
     bool monitoringStop() override;
+    bool handleNetworkFailure() override;
 };
