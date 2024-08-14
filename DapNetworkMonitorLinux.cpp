@@ -33,7 +33,6 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
         if (notification.type == IP_ROUTE_REMOVE) {
             if(notification.route.destination_address == DAP_ADRESS_UNDEFINED &&
                 notification.route.gateway_address != DAP_ADRESS_UNDEFINED) {
-
                 QString gatewayAddr(notification.route.s_gateway_address);
                 if(gatewayAddr == instance->m_tunnelGateway) {
                     if (checkTunnelGw()) {
@@ -83,7 +82,7 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
     case IP_LINK_DEL: {
         qInfo() << QString("Interface %1 is %2 %3 %4")
                        .arg(notification.link.interface_name)
-                       .arg(((notification.type == IP_LINK_NEW && notification.link.is_up) ? "UP" : "DOWN"))
+                       .arg(( (notification.type == IP_LINK_NEW && notification.link.is_up) ? "UP" : "DOWN") )
                        .arg((notification.type == IP_LINK_NEW ? "and" : ""))
                        .arg((notification.type == IP_LINK_NEW ?
                                  (notification.link.is_running ? "RUNNING" : "NOT RUNNING")
@@ -115,7 +114,27 @@ bool DapNetworkMonitorLinux::checkTunnelGw()
     return false;
 }
 
-DapNetworkMonitorLinux::DapNetworkMonitorLinux(QObject *parent) :
+bool DapNetworkMonitorLinux::handleNetworkFailure() {
+    qDebug() << "Attempting to recover network connectivity...";
+
+    QProcess process;
+    QString command = "sudo ifconfig eth0 down && sudo ifconfig eth0 up";
+    qDebug() << "Executing command:" << command;
+    process.start("bash", QStringList() << "-c" << command);
+    process.waitForFinished();
+
+    if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
+        qDebug() << "Network interface eth0 restarted successfully.";
+    } else {
+        qWarning() << "Failed to restart network interface eth0:" << process.readAllStandardError();
+    }
+
+    emit sigInterfaceDefined();
+
+    return true;
+}
+
+DapNetworkMonitorLinux::DapNetworkMonitorLinux(QObject *parent):
     DapNetworkMonitorAbstract(parent)
 {
     m_isTunGatewayDefined.store(true);
