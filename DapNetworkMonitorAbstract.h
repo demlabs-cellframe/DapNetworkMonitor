@@ -33,6 +33,8 @@ public:
         return destination == m_serverAddress && gateway == m_defaultGateway;
     }
 
+    QString getDefaultGateway() { return m_defaultGateway;}
+
 signals:
     void sigRouteChanged();
     void sigOtherGatewayDefined(const QString& gateway);

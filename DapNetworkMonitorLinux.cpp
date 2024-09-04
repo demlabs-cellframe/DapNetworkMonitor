@@ -1,4 +1,5 @@
 #include "DapNetworkMonitorLinux.h"
+#include <QProcess>
 
 void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notification_t notification)
 {
@@ -12,17 +13,18 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                        .arg((notification.type == IP_ADDR_ADD ? "now" : "no longer"))
                        .arg(notification.addr.s_ip);
 
-        if(notification.type == IP_ADDR_ADD)
+        if(notification.type == IP_ADDR_ADD){
             emit instance->sigInterfaceDefined();
-        else
+            DapNetworkMonitorLinux::instance()->sltSetAdpDefined(true);
+        } else {
             emit instance->sigInterfaceUndefined();
+            DapNetworkMonitorLinux::instance()->sltSetAdpDefined(false);
+        }
         break;
     }
 
     case IP_ROUTE_ADD:
     case IP_ROUTE_REMOVE: {
-        emit instance->sigRouteChanged();
-
         qDebug() << QString("%1 route to destination --> %2/%3 proto %4 and gateway %5")
                         .arg((notification.type == IP_ROUTE_ADD ? "Add" : "Delete"))
                         .arg(notification.route.s_destination_address)
@@ -98,40 +100,55 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
     default:
         qWarning() << "Unknown notification type received";
     }
+
+    emit instance->sigRouteChanged();
 }
 
 bool DapNetworkMonitorLinux::checkTunnelGw()
 {
     auto instance = DapNetworkMonitorLinux::instance();
 
-    int ret;
-    if(instance->m_tunnelGateway.size() > 0) {
-        ret = ::system(QString("netstat -rn | grep 'UG ' | grep %1 > /dev/null ")
-                           .arg(instance->m_tunnelGateway)
-                           .toLatin1().constData());
-        return (ret == 0);
+    if (instance->m_tunnelGateway.isEmpty()) {
+        qWarning() << "Tunnel gateway is not set.";
+        return false;
     }
-    return false;
+
+    QProcess process;
+    QString command = QString("ip route show | grep 'UG' | grep %1").arg(instance->m_tunnelGateway);
+    process.start("bash", QStringList() << "-c" << command);
+    process.waitForFinished();
+
+    if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
+        return true;
+    } else {
+        qWarning() << "Failed to check tunnel gateway:" << process.readAllStandardError();
+        return false;
+    }
 }
 
 bool DapNetworkMonitorLinux::handleNetworkFailure() {
     qDebug() << "Attempting to recover network connectivity...";
 
     QProcess process;
-    QString command = "sudo ifconfig eth0 down && sudo ifconfig eth0 up";
-    qDebug() << "Executing command:" << command;
-    process.start("bash", QStringList() << "-c" << command);
-    process.waitForFinished();
+    QStringList interfaces = {"eth0", "enp0s3", "wlp2s0"};
 
-    if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
-        qDebug() << "Network interface eth0 restarted successfully.";
-    } else {
-        qWarning() << "Failed to restart network interface eth0:" << process.readAllStandardError();
+    for (const QString &iface : interfaces) {
+        QString command = QString("sudo ifconfig %1 down && sudo ifconfig %1 up").arg(iface);
+        qDebug() << "Executing command:" << command;
+        process.start("bash", QStringList() << "-c" << command);
+        process.waitForFinished();
+
+        if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
+            qDebug() << QString("Network interface %1 restarted successfully.").arg(iface);
+            emit sigInterfaceDefined();
+            return true;
+        } else {
+            qWarning() << QString("Failed to restart network interface %1:").arg(iface) << process.readAllStandardError();
+        }
     }
 
-    emit sigInterfaceDefined();
-
-    return true;
+    qWarning() << "All attempts to recover network connectivity failed.";
+    return false;
 }
 
 DapNetworkMonitorLinux::DapNetworkMonitorLinux(QObject *parent):
@@ -158,6 +175,10 @@ bool DapNetworkMonitorLinux::monitoringStart()
 
     if(dap_network_monitor_init(cbMonitorNotification) == 0) {
         m_isMonitoringRunning = true;
+        qDebug() << "Network monitoring started successfully.";
+    } else {
+        qWarning() << "Failed to start network monitoring.";
+        m_isMonitoringRunning = false;
     }
 
     return m_isMonitoringRunning;
@@ -166,7 +187,13 @@ bool DapNetworkMonitorLinux::monitoringStart()
 bool DapNetworkMonitorLinux::monitoringStop()
 {
     qDebug() << "Stop network monitoring";
+    if (!m_isMonitoringRunning) {
+        qWarning() << "Network monitoring is not running.";
+        return false;
+    }
+
     dap_network_monitor_deinit();
     m_isMonitoringRunning = false;
+    qDebug() << "Network monitoring stopped.";
     return true;
 }
