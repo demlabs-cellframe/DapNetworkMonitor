@@ -27,6 +27,7 @@ public:
 public slots:
     bool monitoringStart() override;
     bool monitoringStop() override;
+    bool handleNetworkFailure() override;
 };
 
 #endif // NETWORKMONITORMACOS_H

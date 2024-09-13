@@ -2,10 +2,11 @@
 #include <QFileInfo>
 #include <stdio.h>
 #include <string.h>
+#include <QProcess>
 
 
 static void callbackForChangedInterfaces (const void* a_key, const void* a_value, void* a_context) {
-    //qInfo() << "Key - " << a_key << " value - " << a_value; // There is no usefull information from this so far
+    qInfo() << "Key - " << a_key << " value - " << a_value; // There is no usefull information from this so far
 }
 
 
@@ -39,14 +40,38 @@ void DapNetworkMonitorDarwin::cbMonitorNotification(SCDynamicStoreRef a_store, C
     else if (instance()->isOtherGatewayDefinedInnerCheck())
         //emit instance()->sigOtherGatewayDefined(); // TODO More deep check, because default gateway may be false route from wifi
         emit instance()->sigOtherGatewayUndefined();
-    else
+    else {
         emit instance()->sigTunGatewayUndefined();
+        instance()->handleNetworkFailure();
+    }
 }
 
+bool DapNetworkMonitorDarwin::handleNetworkFailure() {
+    qDebug() << "Attempting to recover network connectivity...";
+
+    QProcess process;
+    QString command = "sudo ifconfig en0 down && sudo ifconfig en0 up";
+    process.start(command);
+    process.waitForFinished();
+
+    if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
+        qDebug() << "Network interface en0 restarted successfully.";
+    } else {
+        qWarning() << "Failed to restart network interface en0:" << process.readAllStandardError();
+    }
+
+    emit sigInterfaceDefined();
+
+    return true;
+}
 
 DapNetworkMonitorDarwin::DapNetworkMonitorDarwin(QObject *parent):
     DapNetworkMonitorAbstract(parent)
-{
+{ 
+    m_isTunGatewayDefined.store(true);
+    m_isInterfaceDefined.store(true);
+    m_isHostReachable.store(true);
+    m_isOtherGatewayDefined.store(true);
 }
 
 bool DapNetworkMonitorDarwin::isTunDriverInstalled() const
