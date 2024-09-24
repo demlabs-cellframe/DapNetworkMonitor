@@ -7,6 +7,19 @@
 class DapNetworkMonitorDarwin : public DapNetworkMonitorAbstract
 {
     Q_OBJECT
+public:
+    static DapNetworkMonitorDarwin* instance()
+    {
+        static DapNetworkMonitorDarwin client; 
+        return &client;
+    }
+
+    bool isTunDriverInstalled() const override;
+
+public slots:
+    bool monitoringStart() override;
+    bool monitoringStop() override;
+    bool handleNetworkFailure() override;
 private:
 
     DapNetworkMonitorDarwin(QObject *parent = Q_NULLPTR);
@@ -17,17 +30,6 @@ private:
     bool isOtherGatewayDefinedInnerCheck() const;
 
     static void cbMonitorNotification(SCDynamicStoreRef store, CFArrayRef changedKeys, void *info);
-
-public:
-    static DapNetworkMonitorDarwin* instance()
-        {static DapNetworkMonitorDarwin client; return &client;}
-
-    bool isTunDriverInstalled() const override;
-
-public slots:
-    bool monitoringStart() override;
-    bool monitoringStop() override;
-    bool handleNetworkFailure() override;
 };
 
 #endif // NETWORKMONITORMACOS_H

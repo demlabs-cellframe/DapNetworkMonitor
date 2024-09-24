@@ -27,9 +27,11 @@ bool DapNetworkMonitorAndroid::monitoringStop()
     return false;
 }
 
-void DapNetworkMonitorAndroid::procErr(const int a_err, const QString &a_str) {
+void DapNetworkMonitorAndroid::procErr(const int a_err, const QString &a_str)
+{
     Q_UNUSED(a_str)
-    switch (a_err) {
+    switch (a_err)
+    {
     case ENETUNREACH:
     case EHOSTUNREACH:
     case ENOLINK:

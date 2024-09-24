@@ -9,6 +9,20 @@ class DapNetworkMonitorLinux : public DapNetworkMonitorAbstract
 {
     Q_OBJECT
 
+public:
+    static DapNetworkMonitorLinux* instance()
+    { static DapNetworkMonitorLinux client; return &client; }
+
+    bool isTunDriverInstalled() const override;
+
+    void setTunnelGateway(const QString &gateway) { m_tunnelGateway = gateway; }
+    QString tunnelGateway() const { return m_tunnelGateway; }
+
+public slots:
+    bool monitoringStart() override;
+    bool monitoringStop() override;
+    bool handleNetworkFailure() override;
+
 private:
     static void cbMonitorNotification(const dap_network_notification_t notification);
     static bool checkTunnelGw();
@@ -19,20 +33,4 @@ private:
 
     QString m_tunnelGateway;
     std::atomic<bool> m_isMonitoringRunning;
-
-public:
-    static DapNetworkMonitorLinux* instance()
-    { static DapNetworkMonitorLinux client; return &client; }
-
-    bool isTunDriverInstalled() const override;
-
-    void setTunnelGateway(const QString &gateway) { m_tunnelGateway = gateway; }
-    QString tunnelGateway() const { return m_tunnelGateway; }
-
-signals:
-
-public slots:
-    bool monitoringStart() override;
-    bool monitoringStop() override;
-    bool handleNetworkFailure() override;
 };

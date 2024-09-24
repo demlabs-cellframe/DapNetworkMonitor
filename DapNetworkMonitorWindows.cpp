@@ -2,34 +2,43 @@
 
 #include "DapNetworkMonitorWindows.h"
 
-DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent): DapNetworkMonitorAbstract(parent) {
+DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent): DapNetworkMonitorAbstract(parent)
+{
     qInfo() << "Dap Network Monitor started";
     QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
 }
 
-bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
+bool DapNetworkMonitorWindows::isTunDriverInstalled() const
+{
     return (getTapGUID() != NULL);
 }
 
-bool DapNetworkMonitorWindows::monitoringStart() {
+bool DapNetworkMonitorWindows::monitoringStart()
+{
     m_isMonitoringRunning.store(true);
     return m_isMonitoringRunning;
 }
 
-bool DapNetworkMonitorWindows::monitoringStop() {
+bool DapNetworkMonitorWindows::monitoringStop()
+{
     m_isMonitoringRunning.store(false);
     return m_isMonitoringRunning;
 }
 
-void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route, MIB_NOTIFICATION_TYPE type) {
-    if (!instance()->m_isMonitoringRunning.load()) {
+void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route, MIB_NOTIFICATION_TYPE type)
+{
+    if (!instance()->m_isMonitoringRunning.load())
+    {
         return;
     }
-    switch (type) {
+    switch (type)
+    {
     case MibAddInstance:
-        if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
+        if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0)
+        {
             if (route->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                    route->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+                    route->InterfaceIndex == instance()->m_DefaultAdapterIndex)
+            {
                 instance()->m_isTunGatewayDefined.store(true);
                 emit instance()->sigTunGatewayDefined();
             }
@@ -37,9 +46,11 @@ void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route,
         }
         break;
     case MibDeleteInstance:
-        if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0) {
+        if (route->NextHop.Ipv4.sin_addr.S_un.S_addr == 0)
+        {
             if (route->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                    route->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+                    route->InterfaceIndex == instance()->m_DefaultAdapterIndex)
+            {
                 instance()->m_isTunGatewayDefined.store(false);
                 emit instance()->sigTunGatewayUndefined();
             }
@@ -55,15 +66,19 @@ void DapNetworkMonitorWindows::cbRouteChanged(void *, PMIB_IPFORWARD_ROW2 route,
     }
 }
 
-void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, MIB_NOTIFICATION_TYPE type) {
-    if (!instance()->m_isMonitoringRunning.load()) {
+void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, MIB_NOTIFICATION_TYPE type)
+{
+    if (!instance()->m_isMonitoringRunning.load())
+    {
         return;
     }
-    switch (type) {
+    switch (type)
+    {
     case MibAddInstance:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] enabled";
         if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+                row->InterfaceIndex == instance()->m_DefaultAdapterIndex)
+        {
             instance()->m_isInterfaceDefined.store(true);
             emit instance()->sigInterfaceDefined();
         }
@@ -71,9 +86,10 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
     case MibDeleteInstance:
         qWarning() << "Adapter [ " << row->InterfaceIndex << " ] disabled";
         if (row->InterfaceIndex == instance()->m_TapAdapterIndex ||
-                row->InterfaceIndex == instance()->m_DefaultAdapterIndex) {
+                row->InterfaceIndex == instance()->m_DefaultAdapterIndex)
+        {
             instance()->m_isInterfaceDefined.store(false);
-            emit instance()->sigInterfaceUndefined();
+            emit instance()->interfaceUndefined();
         }
         break;
     /*case MibParameterNotification:
@@ -95,7 +111,8 @@ void DapNetworkMonitorWindows::cbIfaceChanged(void *, PMIB_IPINTERFACE_ROW row, 
     }
 }
 
-void DapNetworkMonitorWindows::internalWorker() {
+void DapNetworkMonitorWindows::internalWorker()
+{
     HANDLE hAddrChange, hRouteChange;
     unsigned int ctx = 0;
 
@@ -111,9 +128,11 @@ void DapNetworkMonitorWindows::internalWorker() {
     }
 }
 
-void DapNetworkMonitorWindows::procErr(const int a_err, const QString &a_str) {
+void DapNetworkMonitorWindows::procErr(const int a_err, const QString &a_str)
+{
     Q_UNUSED(a_str)
-    switch (a_err) {
+    switch (a_err)
+    {
     case WSAEACCES:
     case WSAENETUNREACH:
     case WSAEHOSTUNREACH:

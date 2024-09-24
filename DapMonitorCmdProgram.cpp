@@ -18,13 +18,16 @@ void DapMonitorCmdProgram::sltProcessFinished()
 
 void DapMonitorCmdProgram::sltReadProgramOutput()
 {
-    while (!m_process->atEnd()) {
+    while (!m_process->atEnd())
+    {
         qint64 count_bytes = m_process->readLine(m_outputBuffer, MAX_LINE_LENGTH);
-        if(count_bytes == 0) {
+        if(count_bytes == 0)
+        {
             qWarning() << "Read 0 bytes";
             continue;
         }
-        if(count_bytes == -1) {
+        if(count_bytes == -1)
+        {
             qWarning() << "Error read line";
             break;
         }
@@ -35,7 +38,8 @@ void DapMonitorCmdProgram::sltReadProgramOutput()
 
 void DapMonitorCmdProgram::start()
 {
-    if(m_isRunning) {
+    if(m_isRunning)
+    {
         qWarning() << "Can't start monitoring. He is already started";
         return;
     }
@@ -44,7 +48,7 @@ void DapMonitorCmdProgram::start()
     connect(m_process,static_cast<void (QProcess::*)(int)>(&QProcess::finished),
             this, &DapMonitorCmdProgram::sltProcessFinished);
 
-    connect(m_process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
+    connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         qCritical() << "Monitoring process: " << error;
         if(error == QProcess::ProcessError::FailedToStart) {
             emit sigStartError();
@@ -54,7 +58,7 @@ void DapMonitorCmdProgram::start()
 
     connect(m_process, &QProcess::readyRead, this, &DapMonitorCmdProgram::sltReadProgramOutput);
 
-    connect(m_process, &QProcess::started, [=] {
+    connect(m_process, &QProcess::started, this, [this] {
         qInfo() << "Started process network monitor";
         emit sigStarted();
         m_isRunning = true;

@@ -10,13 +10,14 @@ public:
     explicit DapNetworkMonitorAndroid(QObject *parent = Q_NULLPTR);
 
     static DapNetworkMonitorAndroid* instance()
-        { static DapNetworkMonitorAndroid client; return &client; }
+    { 
+        static DapNetworkMonitorAndroid client; 
+        return &client; 
+    }
 
     bool isTunDriverInstalled() const override;
     bool monitoringStart() override;
     bool monitoringStop() override;
-
-signals:
 
 public slots:
     void procErr(const int, const QString&);

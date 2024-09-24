@@ -8,14 +8,7 @@
 class DapNetworkMonitorAbstract : public QObject
 {
     Q_OBJECT
-protected:
-    // default gateway before install tunneling
-    QString m_defaultGateway;
-    QString m_tunnelDestination;
-    QString m_serverAddress;
-    QString m_tunnelGateway;
 
-    std::atomic<bool> m_isMonitoringRunning, m_isTunGatewayDefined, m_isOtherGatewayDefined, m_isInterfaceDefined, m_isHostReachable;
 public:
     explicit DapNetworkMonitorAbstract(QObject *parent = Q_NULLPTR);
 
@@ -64,6 +57,17 @@ public slots:
     // returns true if operation successfully
     virtual bool monitoringStart() = 0;
     virtual bool monitoringStop() = 0;
+protected:
+    void interfaceUndefined();
+    void interfaceDefined();
+protected:
+    // default gateway before install tunneling
+    QString m_defaultGateway;
+    QString m_tunnelDestination;
+    QString m_serverAddress;
+    QString m_tunnelGateway;
+
+    std::atomic<bool> m_isMonitoringRunning, m_isTunGatewayDefined, m_isOtherGatewayDefined, m_isInterfaceDefined, m_isHostReachable;    
 };
 
 
