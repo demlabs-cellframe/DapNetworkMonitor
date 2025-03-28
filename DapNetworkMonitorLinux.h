@@ -10,7 +10,7 @@ class DapNetworkMonitorLinux : public DapNetworkMonitorAbstract
     Q_OBJECT
 
 private:
-    static void cbMonitorNotification(const dap_network_notification_t notification);
+    static void cbMonitorNotification(const dap_network_notification_t *notification);
     static bool checkTunnelGw();
 
     DapNetworkMonitorLinux(QObject *parent = Q_NULLPTR);
