@@ -1,7 +1,7 @@
 #pragma once
 #include "DapNetworkMonitorAbstract.h"
 #include "DapMonitorCmdProgram.h"
-#include "linux/dap_network_monitor.h"
+#include "dap_network_monitor.h"
 #include <QString>
 #include <atomic>
 

@@ -23,6 +23,7 @@ win32 {
 }
 
 linux-*: !android {
+    INCLUDEPATH += $$SDK_INSTALL_PATH/include/dap/io/linux
     SOURCES += $$PWD/DapNetworkMonitorLinux.cpp
     HEADERS += $$PWD/DapNetworkMonitorLinux.h
 }
