@@ -156,7 +156,7 @@ bool DapNetworkMonitorLinux::monitoringStart()
         return true;
     }
 
-    if(dap_network_monitor_init(&cbMonitorNotification) == 0) {
+    if(dap_network_monitor_init(cbMonitorNotification) == 0) {
         m_isMonitoringRunning = true;
     }
 
