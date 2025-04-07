@@ -1,5 +1,7 @@
 #include "DapNetworkMonitorLinux.h"
 
+const uint64_t dap_addr_undef = (uint64_t)-1;
+
 void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notification_t *notification)
 {
     auto instance = DapNetworkMonitorLinux::instance();
@@ -31,8 +33,8 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                         .arg(notification->route.s_gateway_address);
 
         if (notification->type == IP_ROUTE_REMOVE) {
-            if(notification->route.destination_address == DAP_ADRESS_UNDEFINED &&
-                notification->route.gateway_address != DAP_ADRESS_UNDEFINED) {
+            if(notification->route.destination_address == dap_addr_undef &&
+                notification->route.gateway_address != dap_addr_undef) {
                 QString gatewayAddr(notification->route.s_gateway_address);
                 if(gatewayAddr == instance->m_tunnelGateway) {
                     if (checkTunnelGw()) {
@@ -46,8 +48,8 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                     qInfo() << "Other gateway is undefined";
                     emit instance->sigOtherGatewayUndefined();
                 }
-            } else if(notification->route.destination_address != DAP_ADRESS_UNDEFINED &&
-                       notification->route.gateway_address != DAP_ADRESS_UNDEFINED) {
+            } else if(notification->route.destination_address != dap_addr_undef &&
+                       notification->route.gateway_address != dap_addr_undef) {
                 if(instance->isUpstreamRoute(notification->route.s_destination_address,
                                               notification->route.s_gateway_address)) {
                     qInfo() << "Upstream route is undefined";
@@ -55,8 +57,8 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                 }
             }
         } else if (notification->type == IP_ROUTE_ADD) {
-            if(notification->route.destination_address == DAP_ADRESS_UNDEFINED &&
-                notification->route.gateway_address != DAP_ADRESS_UNDEFINED) {
+            if(notification->route.destination_address == dap_addr_undef &&
+                notification->route.gateway_address != dap_addr_undef) {
                 QString gatewayAddr(notification->route.s_gateway_address);
 
                 if(gatewayAddr == instance->m_tunnelGateway) {
@@ -66,8 +68,8 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                     qInfo() << "Other gateway is defined";
                     emit instance->sigOtherGatewayDefined(gatewayAddr);
                 }
-            } else if(notification->route.destination_address != DAP_ADRESS_UNDEFINED &&
-                       notification->route.gateway_address != DAP_ADRESS_UNDEFINED) {
+            } else if(notification->route.destination_address != dap_addr_undef &&
+                       notification->route.gateway_address != dap_addr_undef) {
                 if(instance->isUpstreamRoute(notification->route.s_destination_address,
                                               notification->route.s_gateway_address)) {
                     qInfo() << "Upstream route is defined";
