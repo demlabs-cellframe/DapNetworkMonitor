@@ -47,7 +47,12 @@ if (WIN32)
 endif()
 
 
-add_library(${PROJECT_NAME} STATIC ${DAP_NM_NATIVE_SRC} ${DAP_NM_NATIVE_HDR} ${DAP_NM_PLATFORM_SRC} ${DAP_NM_PLATFORM_HDR})
+add_library(${PROJECT_NAME} STATIC ${DAP_NM_NATIVE_HDR} ${DAP_NM_NATIVE_SRC} ${DAP_NM_PLATFORM_SRC} ${DAP_NM_PLATFORM_HDR})
+
+message("CMAKE SOURCE DIR: ${CMAKE_SOURCE_DIR}")
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/core)
+
 target_include_directories(${PROJECT_NAME} PUBLIC ./)
 target_include_directories(${PROJECT_NAME} PUBLIC ${DAP_NM_PLATFORM_PUBLIC_INCLUDES})
 
@@ -55,5 +60,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core5Compat)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Concurrent)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE dap_core)
-
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    dap_core
+)

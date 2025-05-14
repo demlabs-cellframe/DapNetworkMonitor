@@ -2,7 +2,7 @@
 #define NETWORKMONITORMACOS_H
 
 #include "DapNetworkMonitorAbstract.h"
-#include "dap_network_monitor.h"
+#include "src/darwin/macos/dap_network_monitor.h"
 
 class DapNetworkMonitorDarwin : public DapNetworkMonitorAbstract
 {
