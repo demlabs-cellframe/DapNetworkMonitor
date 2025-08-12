@@ -1,18 +1,18 @@
 #include "DapNetworkMonitorLinux.h"
 
-void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notification_t notification)
+void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notification_t *notification)
 {
     auto instance = DapNetworkMonitorLinux::instance();
 
-    switch(notification.type) {
+    switch(notification->type) {
     case IP_ADDR_ADD:
     case IP_ADDR_REMOVE: {
         qInfo() << QString("Interface %1 %2 has IP address %3")
-                       .arg(notification.addr.interface_name)
-                       .arg((notification.type == IP_ADDR_ADD ? "now" : "no longer"))
-                       .arg(notification.addr.s_ip);
+                       .arg(notification->addr.interface_name)
+                       .arg((notification->type == IP_ADDR_ADD ? "now" : "no longer"))
+                       .arg(notification->addr.s_ip);
 
-        if(notification.type == IP_ADDR_ADD)
+        if(notification->type == IP_ADDR_ADD)
             emit instance->sigInterfaceDefined();
         else
             emit instance->sigInterfaceUndefined();
@@ -24,16 +24,17 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
         emit instance->sigRouteChanged();
 
         qDebug() << QString("%1 route to destination --> %2/%3 proto %4 and gateway %5")
-                        .arg((notification.type == IP_ROUTE_ADD ? "Add" : "Delete"))
-                        .arg(notification.route.s_destination_address)
-                        .arg(notification.route.netmask)
-                        .arg(notification.route.protocol)
-                        .arg(notification.route.s_gateway_address);
+                        .arg((notification->type == IP_ROUTE_ADD ? "Add" : "Delete"))
+                        .arg(notification->route.s_destination_address)
+                        .arg(notification->route.netmask)
+                        .arg(notification->route.protocol)
+                        .arg(notification->route.s_gateway_address);
 
-        if (notification.type == IP_ROUTE_REMOVE) {
-            if(notification.route.destination_address == DAP_ADRESS_UNDEFINED &&
-                notification.route.gateway_address != DAP_ADRESS_UNDEFINED) {
-                QString gatewayAddr(notification.route.s_gateway_address);
+        if (notification->type == IP_ROUTE_REMOVE) {
+            // Check for default route (destination 0.0.0.0/0)
+            if(notification->route.destination_address == 0 &&
+                notification->route.gateway_address != 0) {
+                QString gatewayAddr(notification->route.s_gateway_address);
                 if(gatewayAddr == instance->m_tunnelGateway) {
                     if (checkTunnelGw()) {
                         qInfo() << "Tunnel gateway is still defined";
@@ -46,18 +47,18 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                     qInfo() << "Other gateway is undefined";
                     emit instance->sigOtherGatewayUndefined();
                 }
-            } else if(notification.route.destination_address != DAP_ADRESS_UNDEFINED &&
-                       notification.route.gateway_address != DAP_ADRESS_UNDEFINED) {
-                if(instance->isUpstreamRoute(notification.route.s_destination_address,
-                                              notification.route.s_gateway_address)) {
+            } else if(notification->route.destination_address != 0 &&
+                       notification->route.gateway_address != 0) {
+                if(instance->isUpstreamRoute(notification->route.s_destination_address,
+                                              notification->route.s_gateway_address)) {
                     qInfo() << "Upstream route is undefined";
                     emit instance->sigUpstreamRouteUndefined();
                 }
             }
-        } else if (notification.type == IP_ROUTE_ADD) {
-            if(notification.route.destination_address == DAP_ADRESS_UNDEFINED &&
-                notification.route.gateway_address != DAP_ADRESS_UNDEFINED) {
-                QString gatewayAddr(notification.route.s_gateway_address);
+        } else if (notification->type == IP_ROUTE_ADD) {
+            if(notification->route.destination_address == 0 &&
+                notification->route.gateway_address != 0) {
+                QString gatewayAddr(notification->route.s_gateway_address);
 
                 if(gatewayAddr == instance->m_tunnelGateway) {
                     qInfo() << "Tunnel gateway is defined";
@@ -66,10 +67,10 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
                     qInfo() << "Other gateway is defined";
                     emit instance->sigOtherGatewayDefined(gatewayAddr);
                 }
-            } else if(notification.route.destination_address != DAP_ADRESS_UNDEFINED &&
-                       notification.route.gateway_address != DAP_ADRESS_UNDEFINED) {
-                if(instance->isUpstreamRoute(notification.route.s_destination_address,
-                                              notification.route.s_gateway_address)) {
+            } else if(notification->route.destination_address != 0 &&
+                       notification->route.gateway_address != 0) {
+                if(instance->isUpstreamRoute(notification->route.s_destination_address,
+                                              notification->route.s_gateway_address)) {
                     qInfo() << "Upstream route is defined";
                     emit instance->sigUpstreamRouteDefined();
                 }
@@ -81,14 +82,14 @@ void DapNetworkMonitorLinux::cbMonitorNotification(const dap_network_notificatio
     case IP_LINK_NEW:
     case IP_LINK_DEL: {
         qInfo() << QString("Interface %1 is %2 %3 %4")
-                       .arg(notification.link.interface_name)
-                       .arg(( (notification.type == IP_LINK_NEW && notification.link.is_up) ? "UP" : "DOWN") )
-                       .arg((notification.type == IP_LINK_NEW ? "and" : ""))
-                       .arg((notification.type == IP_LINK_NEW ?
-                                 (notification.link.is_running ? "RUNNING" : "NOT RUNNING")
+                       .arg(notification->link.interface_name)
+                       .arg(( (notification->type == IP_LINK_NEW && notification->link.is_up) ? "UP" : "DOWN") )
+                       .arg((notification->type == IP_LINK_NEW ? "and" : ""))
+                       .arg((notification->type == IP_LINK_NEW ?
+                                 (notification->link.is_running ? "RUNNING" : "NOT RUNNING")
                                                               : ""));
 
-        if(notification.type == IP_LINK_DEL)
+        if(notification->type == IP_LINK_DEL)
             emit instance->sigInterfaceUndefined();
         else
             emit instance->sigInterfaceDefined();
