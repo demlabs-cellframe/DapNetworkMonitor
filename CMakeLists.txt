@@ -8,29 +8,63 @@ set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Network)
 
-set(SRC
+# Base sources (platform-independent)
+set(SRC_BASE
   ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorAbstract.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorLinux.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/DapMonitorCmdProgram.cpp
 )
 
-set(HDR
+set(HDR_BASE
   ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitor.h
   ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorAbstract.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorLinux.h
   ${CMAKE_CURRENT_SOURCE_DIR}/DapMonitorCmdProgram.h
 )
 
-add_library(dap_network_monitor STATIC ${SRC} ${HDR})
+# Platform-specific sources
+if(LINUX AND NOT ANDROID)
+  list(APPEND SRC_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorLinux.cpp)
+  list(APPEND HDR_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorLinux.h)
+  message(STATUS "DapNetworkMonitor: Building for Linux")
+elseif(WIN32)
+  list(APPEND SRC_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorWindows.cpp)
+  list(APPEND HDR_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorWindows.h)
+  message(STATUS "DapNetworkMonitor: Building for Windows")
+elseif(APPLE)
+  list(APPEND SRC_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorDarwin.cpp)
+  list(APPEND HDR_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorDarwin.h)
+  message(STATUS "DapNetworkMonitor: Building for macOS")
+elseif(ANDROID)
+  list(APPEND SRC_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorAndroid.cpp)
+  list(APPEND HDR_BASE ${CMAKE_CURRENT_SOURCE_DIR}/DapNetworkMonitorAndroid.h)
+  message(STATUS "DapNetworkMonitor: Building for Android")
+else()
+  message(WARNING "DapNetworkMonitor: Unknown platform")
+endif()
+
+add_library(dap_network_monitor STATIC ${SRC_BASE} ${HDR_BASE})
 
 target_link_libraries(dap_network_monitor PUBLIC Qt6::Core Qt6::Network cellframe-sdk)
 
+# Platform-specific include directories
 target_include_directories(dap_network_monitor PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/io/linux
-  ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/io/macos
   ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/io
   ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/core/include
 )
+
+# Add platform-specific io includes
+if(LINUX AND NOT ANDROID)
+  target_include_directories(dap_network_monitor PUBLIC
+    ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/io/linux
+  )
+elseif(WIN32)
+  target_include_directories(dap_network_monitor PUBLIC
+    ${CMAKE_SOURCE_DIR}/DapChainVPN/Service/vpn/tunnel/windows/tuntap  # For tuntap.h
+  )
+elseif(APPLE)
+  target_include_directories(dap_network_monitor PUBLIC
+    ${CMAKE_SOURCE_DIR}/cellframe-sdk/dap-sdk/io/macos
+  )
+endif()
 
 

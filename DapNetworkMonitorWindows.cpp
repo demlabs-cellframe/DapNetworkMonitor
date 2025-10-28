@@ -4,7 +4,8 @@
 
 DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent): DapNetworkMonitorAbstract(parent) {
     qInfo() << "Dap Network Monitor started";
-    QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
+    // Qt6 syntax: function pointer first, then object
+    QtConcurrent::run(&DapNetworkMonitorWindows::internalWorker, this);
 }
 
 bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
