@@ -44,7 +44,7 @@ void DapMonitorCmdProgram::start()
     connect(m_process, &QProcess::finished,
             this, &DapMonitorCmdProgram::sltProcessFinished);
 
-    connect(m_process, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
+    connect(m_process, &QProcess::errorOccurred, [this](QProcess::ProcessError error) {
         qCritical() << "Monitoring process: " << error;
         if(error == QProcess::ProcessError::FailedToStart) {
             emit sigStartError();
@@ -54,7 +54,7 @@ void DapMonitorCmdProgram::start()
 
     connect(m_process, &QProcess::readyRead, this, &DapMonitorCmdProgram::sltReadProgramOutput);
 
-    connect(m_process, &QProcess::started, [=] {
+    connect(m_process, &QProcess::started, [this] {
         qInfo() << "Started process network monitor";
         emit sigStarted();
         m_isRunning = true;
