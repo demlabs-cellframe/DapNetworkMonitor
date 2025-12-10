@@ -45,6 +45,12 @@ add_library(dap_network_monitor STATIC ${SRC_BASE} ${HDR_BASE})
 
 target_link_libraries(dap_network_monitor PUBLIC Qt6::Core Qt6::Network cellframe-sdk)
 
+# Windows-specific dependencies
+if(WIN32)
+    find_package(Qt6 COMPONENTS Concurrent REQUIRED)
+    target_link_libraries(dap_network_monitor PUBLIC Qt6::Concurrent iphlpapi ws2_32)
+endif()
+
 # Platform-specific include directories
 target_include_directories(dap_network_monitor PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
