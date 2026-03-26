@@ -4,7 +4,11 @@
 
 DapNetworkMonitorWindows::DapNetworkMonitorWindows(QObject *parent): DapNetworkMonitorAbstract(parent) {
     qInfo() << "Dap Network Monitor started";
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QtConcurrent::run([this] { internalWorker(); });
+#else
     QtConcurrent::run(this, &DapNetworkMonitorWindows::internalWorker);
+#endif
 }
 
 bool DapNetworkMonitorWindows::isTunDriverInstalled() const {
